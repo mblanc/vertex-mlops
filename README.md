@@ -12,7 +12,8 @@ This is an introduction
 
 ## Templates
 
-||Template||Description||
+|Template|Description|
+|--------|-----------|
 |Tabular Data| Classification/Regression|
 |Time Series Forecasting| |
 |Images| |
