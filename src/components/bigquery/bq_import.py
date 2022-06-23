@@ -14,14 +14,15 @@
 
 from kfp.v2.dsl import Artifact, Output, component
 
+
 @component(base_image="python:3.9", packages_to_install=["google-cloud-bigquery"])
 def import_csv_to_bigquery(
-    project: str,
-    bq_location: str,
-    bq_dataset: str,
-    gcs_csv_uri: str,
-    raw_dataset: Output[Artifact],
-    table_name_prefix: str = "abalone",
+        project: str,
+        bq_location: str,
+        bq_dataset: str,
+        gcs_csv_uri: str,
+        raw_dataset: Output[Artifact],
+        table_name_prefix: str = "abalone",
 ):
     from google.cloud import bigquery
 
@@ -61,7 +62,7 @@ def import_csv_to_bigquery(
     print("Deleting any tables that might have the same name on the dataset")
     client.delete_table(table_id, not_found_ok=True)
     print("will load data to table")
-    load_dataset(gcs_data_uri, table_id)
+    load_dataset(gcs_csv_uri, table_id)
 
     raw_dataset_uri = f"bq://{table_id}"
     raw_dataset.uri = raw_dataset_uri
