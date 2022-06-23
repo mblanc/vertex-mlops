@@ -1,0 +1,6 @@
+kfp
+google-cloud-bigquery
+google-cloud-bigquery-storage
+google-cloud-aiplatform
+cloudml-hypertune
+pytest
