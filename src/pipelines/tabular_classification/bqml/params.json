@@ -1,0 +1,10 @@
+{
+    "bq_table": "aju-dev-demos.beans.beans1",
+    "label": "Class",
+    "model": "pipeline_us.beans_model",
+    "artifact_uri": "gs://svc-demo-vertex-us/vertex-mlops/bqmodel",
+    "display_name": "beans-bqml",
+    "project": "svc-demo-vertex",
+    "region": "us-central1",
+    "bq_location": "US"
+}

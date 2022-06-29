@@ -1,0 +1,7 @@
+{
+    "bq_table": "bq://aju-dev-demos.beans.beans1",
+    "label": "Class",
+    "display_name": "beans-automl",
+    "project": "svc-demo-vertex",
+    "region": "us-central1"
+}

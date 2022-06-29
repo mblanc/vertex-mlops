@@ -1,0 +1,25 @@
+{
+    "project": "svc-demo-vertex",
+    "region": "us-central1",
+    "display_name": "forecasting-automl",
+    "bq_table": "bq://bigquery-public-data:iowa_liquor_sales_forecasting.2020_sales_train",
+    "label": "sale_dollars",
+    "time_column": "date",
+    "id_column": "store_name",
+    "available_at_forecast_columns": ["date"],
+    "unavailable_at_forecast_columns": ["sale_dollars"],
+    "time_series_attribute_columns": ["city", "zip_code", "county"],
+    "forecast_horizon": 30,
+    "context_window": 30,
+    "data_granularity_unit": "day",
+    "data_granularity_count": 1,
+    "column_specs": {
+        "date": "timestamp",
+        "sale_dollars": "numeric",
+        "city": "categorical",
+        "zip_code": "categorical",
+        "county": "categorical"
+    },
+    "bigquery_source_input_uri": "bq://bigquery-public-data:iowa_liquor_sales_forecasting.2021_sales_predict",
+    "bigquery_destination_output_uri": "bq://svc-demo-vertex"
+}

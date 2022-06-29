@@ -20,6 +20,7 @@ This is an introduction
 | Tabular Data | Recommendation |
 | Tabular Data | Anomaly Detection |
 | Time Series | Forecasting |
+| Time Series | Anomaly Detection |
 | Images | Classification |
 | Images | Object Detection |
 | Images | Segmentation |

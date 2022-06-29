@@ -32,7 +32,18 @@ def import_csv_to_bigquery(
     def load_dataset(gcs_uri, table_id):
         job_config = bigquery.LoadJobConfig(
             autodetect=True,
-            skip_leading_rows=1,
+            # schema=[
+            #     bigquery.SchemaField("Sex", "STRING"),
+            #     bigquery.SchemaField("Length", "NUMERIC"),
+            #     bigquery.SchemaField("Diameter", "NUMERIC"),
+            #     bigquery.SchemaField("Height", "NUMERIC"),
+            #     bigquery.SchemaField("Whole_weight", "NUMERIC"),
+            #     bigquery.SchemaField("Shucked_weight", "NUMERIC"),
+            #     bigquery.SchemaField("Viscera_weight", "NUMERIC"),
+            #     bigquery.SchemaField("Shell_weight", "NUMERIC"),
+            #     bigquery.SchemaField("Rings", "NUMERIC"),
+            # ],
+            # skip_leading_rows=1,
             # The source format defaults to CSV, so the line below is optional.
             source_format=bigquery.SourceFormat.CSV,
         )
