@@ -14,8 +14,9 @@
 
 import argparse
 from typing import Dict, Any
-from kfp.v2 import compiler, dsl
+
 from google.cloud import aiplatform
+from kfp.v2 import compiler, dsl
 
 from src.components.bigquery.bq_import import import_csv_to_bigquery
 

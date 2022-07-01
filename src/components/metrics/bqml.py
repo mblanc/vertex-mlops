@@ -1,8 +1,9 @@
-from kfp.v2.dsl import Artifact, Input, Metrics, ClassificationMetrics, Output, component
+from kfp.v2.dsl import Artifact, Input, Metrics, Output, component
+
 
 @component(base_image="python:3.9")
 def interpret_bqml_evaluation_metrics(
-    bqml_evaluation_metrics: Input[Artifact], metrics: Output[Metrics]
+        bqml_evaluation_metrics: Input[Artifact], metrics: Output[Metrics]
 ):
     import math
 

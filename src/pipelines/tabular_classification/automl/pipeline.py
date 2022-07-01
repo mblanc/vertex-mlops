@@ -12,32 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import path
 import argparse
 import json
+from os import path
 from typing import Dict, Any
-from kfp.v2 import compiler, dsl
+
 from google.cloud import aiplatform
 from google_cloud_pipeline_components import aiplatform as gcc_aip
 from google_cloud_pipeline_components.v1.endpoint import (EndpointCreateOp,
                                                           ModelDeployOp)
+from kfp.v2 import compiler, dsl
+
 from src.components.metrics.automl import interpret_automl_classification_metrics
+
 
 @dsl.pipeline(name="tabular-classification-automl-pipeline")
 def pipeline(
-    project: str,
-    region: str,
-    bq_table: str,
-    label: str,
-    display_name: str,
+        project: str,
+        region: str,
+        bq_table: str,
+        label: str,
+        display_name: str,
 ):
     dataset_create_op = gcc_aip.TabularDatasetCreateOp(
-        project=project, 
-        location=region, 
-        display_name=display_name, 
+        project=project,
+        location=region,
+        display_name=display_name,
         bq_source=bq_table
     )
-    
+
     training_op = gcc_aip.AutoMLTabularTrainingJobRunOp(
         project=project,
         location=region,
@@ -46,13 +49,13 @@ def pipeline(
         dataset=dataset_create_op.outputs["dataset"],
         target_column=label,
     )
-    
+
     model_eval_op = interpret_automl_classification_metrics(
         project,
         region,
         training_op.outputs["model"],
     )
-    
+
     endpoint_op = EndpointCreateOp(
         project=project,
         location=region,
@@ -122,15 +125,15 @@ def main(args):
         compile(args.template_path)
     elif args.command == "run":
         aiplatform.init()
- 
+
         basepath = path.dirname(__file__)
         filepath = path.abspath(path.join(basepath, "params.json"))
         print(filepath)
         with open(filepath) as json_file:
             pipeline_params = json.load(json_file)
-        
+
         print(pipeline_params)
-        
+
         run_job(
             template_path=args.template_path,
             pipeline_root=args.pipeline_root,

@@ -12,31 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import path
 import argparse
 import json
+from os import path
 from typing import Dict, Any
-from kfp.v2 import compiler, dsl
+
 from google.cloud import aiplatform
-from google_cloud_pipeline_components.types import artifact_types
 from google_cloud_pipeline_components.experimental.bigquery import (
     BigqueryCreateModelJobOp, BigqueryMLArimaEvaluateJobOp,
     BigqueryExplainForecastModelJobOp)
+from kfp.v2 import compiler, dsl
+
 
 @dsl.pipeline(name="forecasting-bqml-pipeline")
 def pipeline(
-    project: str,
-    region: str,
-    bq_location: str,
-    bq_table: str,
-    model: str,
-    label: str,
-    time_column: str,
-    id_column: str,
-    data_frequency: str,
-    forecast_horizon: int,
+        project: str,
+        region: str,
+        bq_location: str,
+        bq_table: str,
+        model: str,
+        label: str,
+        time_column: str,
+        id_column: str,
+        data_frequency: str,
+        forecast_horizon: int,
 ):
-
     bq_model = BigqueryCreateModelJobOp(
         project=project,
         location=bq_location,
@@ -53,8 +53,8 @@ def pipeline(
     )
 
     _ = BigqueryMLArimaEvaluateJobOp(
-        project=project, 
-        location=bq_location, 
+        project=project,
+        location=bq_location,
         model=bq_model.outputs["model"],
         job_configuration_query={
             "destinationTable": {
@@ -82,6 +82,7 @@ def pipeline(
             "writeDisposition": "WRITE_TRUNCATE",
         },
     ).after(bq_model)
+
 
 def compile(package_path: str):
     """ Compile the pipeline """
@@ -137,15 +138,15 @@ def main(args):
         compile(args.template_path)
     elif args.command == "run":
         aiplatform.init()
- 
+
         basepath = path.dirname(__file__)
         filepath = path.abspath(path.join(basepath, "params.json"))
         print(filepath)
         with open(filepath) as json_file:
             pipeline_params = json.load(json_file)
-        
+
         print(pipeline_params)
-        
+
         run_job(
             template_path=args.template_path,
             pipeline_root=args.pipeline_root,

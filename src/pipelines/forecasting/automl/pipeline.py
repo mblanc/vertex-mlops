@@ -12,47 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import path
 import argparse
 import json
-from json.decoder import JSONArray, JSONObject
-from typing import Dict, Any, List, Set, Dict, Tuple, Optional
-from kfp.v2 import compiler, dsl
+from os import path
+from typing import Any, Dict
+
 from google.cloud import aiplatform
 from google_cloud_pipeline_components import aiplatform as gcc_aip
-from google_cloud_pipeline_components.v1.endpoint import (EndpointCreateOp,
-                                                          ModelDeployOp)
+from kfp.v2 import compiler, dsl
+
 
 @dsl.pipeline(name="forecasting-automl-pipeline")
 def pipeline(
-    project: str,
-    region: str,
-    display_name: str,
-    bq_table: str,
-    label: str,
-    time_column: str,
-    id_column: str,
-    available_at_forecast_columns: list,
-    unavailable_at_forecast_columns: list,
-    time_series_attribute_columns: list,
-    forecast_horizon: int,
-    context_window: int,
-    data_granularity_unit: str,
-    data_granularity_count: int,
-    column_specs: dict,
-    bigquery_source_input_uri: str,
-    bigquery_destination_output_uri: str,
+        project: str,
+        region: str,
+        display_name: str,
+        bq_table: str,
+        label: str,
+        time_column: str,
+        id_column: str,
+        available_at_forecast_columns: list,
+        unavailable_at_forecast_columns: list,
+        time_series_attribute_columns: list,
+        forecast_horizon: int,
+        context_window: int,
+        data_granularity_unit: str,
+        data_granularity_count: int,
+        column_specs: dict,
+        bigquery_source_input_uri: str,
+        bigquery_destination_output_uri: str,
 ):
     dataset_create_op = gcc_aip.TimeSeriesDatasetCreateOp(
-        project=project, 
-        location=region, 
-        display_name=display_name, 
+        project=project,
+        location=region,
+        display_name=display_name,
         bq_source=bq_table
     )
-    
+
     training_op = gcc_aip.AutoMLForecastingTrainingJobRunOp(
         project=project,
-        location=region, 
+        location=region,
         display_name=display_name,
         dataset=dataset_create_op.outputs["dataset"],
         target_column=label,
@@ -68,10 +67,10 @@ def pipeline(
         column_specs=column_specs,
         export_evaluated_data_items=True,
     )
-    
+
     batch_predict_op = gcc_aip.ModelBatchPredictOp(
         project=project,
-        location=region, 
+        location=region,
         job_display_name=display_name,
         model=training_op.outputs["model"],
         instances_format="bigquery",
@@ -80,8 +79,6 @@ def pipeline(
         bigquery_destination_output_uri=bigquery_destination_output_uri,
         generate_explanation=True
     )
-    
-    
 
 
 def compile(package_path: str):
@@ -138,15 +135,15 @@ def main(args):
         compile(args.template_path)
     elif args.command == "run":
         aiplatform.init()
- 
+
         basepath = path.dirname(__file__)
         filepath = path.abspath(path.join(basepath, "params.json"))
         print(filepath)
         with open(filepath) as json_file:
             pipeline_params = json.load(json_file)
-        
+
         print(pipeline_params)
-        
+
         run_job(
             template_path=args.template_path,
             pipeline_root=args.pipeline_root,
