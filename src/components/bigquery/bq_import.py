@@ -17,17 +17,18 @@ from kfp.v2.dsl import Artifact, Output, component
 
 @component(base_image="python:3.9", packages_to_install=["google-cloud-bigquery"])
 def import_csv_to_bigquery(
-        project: str,
-        bq_location: str,
-        bq_dataset: str,
-        gcs_csv_uri: str,
-        raw_dataset: Output[Artifact],
-        table_name_prefix: str = "abalone",
+    project: str,
+    bq_location: str,
+    bq_dataset: str,
+    gcs_csv_uri: str,
+    raw_dataset: Output[Artifact],
+    table_name_prefix: str = "abalone",
 ):
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.
     client = bigquery.Client(project=project, location=bq_location)
+    test = "test"
 
     def load_dataset(gcs_uri, table_id):
         job_config = bigquery.LoadJobConfig(

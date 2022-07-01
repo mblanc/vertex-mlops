@@ -1,4 +1,12 @@
-from kfp.v2.dsl import Artifact, Input, Metrics, ClassificationMetrics, Output, component
+from kfp.v2.dsl import (
+    Artifact,
+    Input,
+    Metrics,
+    ClassificationMetrics,
+    Output,
+    component,
+)
+
 
 @component(
     base_image="python:3.9",
@@ -7,13 +15,17 @@ from kfp.v2.dsl import Artifact, Input, Metrics, ClassificationMetrics, Output, 
     ],
 )
 def interpret_automl_classification_metrics(
-    project: str, region: str, model: Input[Artifact], metrics: Output[Metrics], classificationMetrics: Output[ClassificationMetrics]
+    project: str,
+    region: str,
+    model: Input[Artifact],
+    metrics: Output[Metrics],
+    classificationMetrics: Output[ClassificationMetrics],
 ):
     import json
     import logging
 
     from google.cloud import aiplatform as aip
-    
+
     def get_eval_info(client, model_name):
         from google.protobuf.json_format import MessageToDict
 
@@ -30,7 +42,7 @@ def interpret_automl_classification_metrics(
             metrics_list.append(metrics)
 
         return metrics_list
-    
+
     def log_metrics(metrics_list, classificationMetrics):
         test_confusion_matrix = metrics_list[0]["confusionMatrix"]
         logging.info("rows: %s", test_confusion_matrix["rows"])
@@ -64,7 +76,7 @@ def interpret_automl_classification_metrics(
                 val_string = json.dumps(metrics_list[0][metric])
                 metrics.log_metric(metric, val_string)
         # metrics.metadata["model_type"] = "AutoML Tabular classification"
-        
+
     logging.getLogger().setLevel(logging.INFO)
     aip.init(project=project)
     # extract the model resource name from the input Model Artifact
@@ -77,7 +89,6 @@ def interpret_automl_classification_metrics(
     metrics_list = get_eval_info(client, model_resource_path)
     log_metrics(metrics_list, classificationMetrics)
 
-    
 
 @component(
     base_image="python:3.9",
@@ -89,8 +100,10 @@ def interpret_automl_regression_metrics(
     project: str, region: str, model: Input[Artifact], metrics: Output[Metrics]
 ):
     import google.cloud.aiplatform as aip
-    
-    model = aip.Model(model_name= model.metadata["resourceName"], project=project, location=region)
+
+    model = aip.Model(
+        model_name=model.metadata["resourceName"], project=project, location=region
+    )
 
     model_evaluations = model.list_model_evaluations()
     model_evaluation = list(model_evaluations)[0]
