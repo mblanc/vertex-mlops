@@ -37,14 +37,12 @@ def pipeline(
     bq_table: str,
     label: str,
     model: str,
-    artifact_uri: str,
-    display_name: str,
 ):
 
     bq_model = BigqueryCreateModelJobOp(
         project=project,
         location=bq_location,
-        query=f"CREATE OR REPLACE MODEL {model} OPTIONS (model_type='dnn_classifier', labels=['{label}']) AS SELECT * FROM `{bq_table}`",
+        query=f"CREATE OR REPLACE MODEL {model} OPTIONS (model_type='BOOSTED_TREE_REGRESSOR', labels=['{label}']) AS SELECT * FROM `{bq_table}`",
     )
 
     bq_eval_model_op = BigqueryEvaluateModelJobOp(
@@ -63,51 +61,12 @@ def pipeline(
             "destinationTable": {
                 "projectId": "svc-demo-vertex",
                 "datasetId": "pipeline_us",
-                "tableId": "results_1",
+                "tableId": "results_abalone",
             },
             "createDisposition": "CREATE_IF_NEEDED",
             "writeDisposition": "WRITE_TRUNCATE",
         },
     ).after(bq_model)
-
-    bq_export = BigqueryExportModelJobOp(
-        project=project,
-        location=bq_location,
-        model=bq_model.outputs["model"],
-        model_destination_path=artifact_uri,
-    ).after(bq_model)
-
-    import_unmanaged_model_task = importer_node.importer(
-        artifact_uri=artifact_uri,
-        artifact_class=artifact_types.UnmanagedContainerModel,
-        metadata={
-            "containerSpec": {
-                "imageUri": "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-6:latest",
-            },
-        },
-    ).after(bq_export)
-
-    model_upload = ModelUploadOp(
-        project=project,
-        display_name=display_name,
-        unmanaged_container_model=import_unmanaged_model_task.outputs["artifact"],
-    ).after(import_unmanaged_model_task)
-
-    endpoint = EndpointCreateOp(
-        project=project,
-        location=region,
-        display_name=display_name,
-    ).after(model_upload)
-
-    _ = ModelDeployOp(
-        model=model_upload.outputs["model"],
-        endpoint=endpoint.outputs["endpoint"],
-        dedicated_resources_min_replica_count=1,
-        dedicated_resources_max_replica_count=1,
-        dedicated_resources_machine_type="n1-standard-2",
-        traffic_split={"0": 100},
-    )
-
 
 def compile(package_path: str):
     """ Compile the pipeline """
@@ -125,7 +84,7 @@ def run_job(
 ):
     """ Run the pipeline """
     job = aiplatform.PipelineJob(
-        display_name="tabular_classification_bqml_pipeline",
+        display_name="tabular_regression_bqml_pipeline",
         template_path=template_path,
         pipeline_root=pipeline_root,
         parameter_values=pipeline_params,
@@ -138,7 +97,7 @@ def run_job(
 
 def parse_args() -> argparse.Namespace:
     """ Parse arguments """
-    parser = argparse.ArgumentParser(description=f"tabular classification pipeline operations.")
+    parser = argparse.ArgumentParser(description=f"tabular regression bqml pipeline operations.")
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)
 

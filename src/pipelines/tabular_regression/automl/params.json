@@ -1,0 +1,7 @@
+{
+    "project": "svc-demo-vertex",
+    "region": "us-central1",
+    "bq_table": "bq://svc-demo-vertex.pipeline_us.abalone",
+    "label": "Rings",
+    "display_name": "abalone-bqml"
+}

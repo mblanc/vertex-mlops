@@ -252,6 +252,29 @@
           }
         }
       },
+      "comp-interpret-bqml-evaluation-metrics": {
+        "executorLabel": "exec-interpret-bqml-evaluation-metrics",
+        "inputDefinitions": {
+          "artifacts": {
+            "bqml_evaluation_metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
       "comp-model-deploy": {
         "executorLabel": "exec-model-deploy",
         "inputDefinitions": {
@@ -403,7 +426,7 @@
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
             ],
-            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.7"
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
           }
         },
         "exec-bigquery-evaluate-model-job": {
@@ -438,7 +461,7 @@
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
             ],
-            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.7"
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
           }
         },
         "exec-bigquery-export-model-job": {
@@ -469,7 +492,7 @@
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
             ],
-            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.7"
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
           }
         },
         "exec-bigquery-predict-model-job": {
@@ -504,7 +527,7 @@
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
             ],
-            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.7"
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
           }
         },
         "exec-endpoint-create": {
@@ -529,7 +552,7 @@
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
             ],
-            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.7"
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
           }
         },
         "exec-importer": {
@@ -546,6 +569,26 @@
               "schemaTitle": "google.UnmanagedContainerModel",
               "schemaVersion": "0.0.1"
             }
+          }
+        },
+        "exec-interpret-bqml-evaluation-metrics": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "interpret_bqml_evaluation_metrics"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.12' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef interpret_bqml_evaluation_metrics(\n    bqml_evaluation_metrics: Input[Artifact], metrics: Output[Metrics]\n):\n    import math\n\n    metadata = bqml_evaluation_metrics.metadata\n    for r in metadata[\"rows\"]:\n\n        rows = r[\"f\"]\n        schema = metadata[\"schema\"][\"fields\"]\n\n        output = {}\n        for metric, value in zip(schema, rows):\n            metric_name = metric[\"name\"]\n            val = float(value[\"v\"])\n            output[metric_name] = val\n            metrics.log_metric(metric_name, val)\n            if metric_name == \"mean_squared_error\":\n                rmse = math.sqrt(val)\n                metrics.log_metric(\"root_mean_squared_error\", rmse)\n\n    metrics.log_metric(\"framework\", \"BQML\")\n\n    print(output)\n\n"
+            ],
+            "image": "python:3.9"
           }
         },
         "exec-model-deploy": {
@@ -568,7 +611,7 @@
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
             ],
-            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.7"
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
           }
         },
         "exec-model-upload": {
@@ -593,7 +636,7 @@
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
             ],
-            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.7"
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
           }
         }
       }
@@ -603,6 +646,18 @@
     },
     "root": {
       "dag": {
+        "outputs": {
+          "artifacts": {
+            "interpret-bqml-evaluation-metrics-metrics": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metrics",
+                  "producerSubtask": "interpret-bqml-evaluation-metrics"
+                }
+              ]
+            }
+          }
+        },
         "tasks": {
           "bigquery-create-model-job": {
             "cachingOptions": {
@@ -938,6 +993,30 @@
               "name": "importer"
             }
           },
+          "interpret-bqml-evaluation-metrics": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-interpret-bqml-evaluation-metrics"
+            },
+            "dependentTasks": [
+              "bigquery-evaluate-model-job"
+            ],
+            "inputs": {
+              "artifacts": {
+                "bqml_evaluation_metrics": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "evaluation_metrics",
+                    "producerTask": "bigquery-evaluate-model-job"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "interpret-bqml-evaluation-metrics"
+            }
+          },
           "model-deploy": {
             "cachingOptions": {
               "enableCache": true
@@ -1170,6 +1249,16 @@
           },
           "region": {
             "type": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "interpret-bqml-evaluation-metrics-metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
           }
         }
       }

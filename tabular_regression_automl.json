@@ -1,0 +1,395 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-automl-tabular-training-job": {
+        "executorLabel": "exec-automl-tabular-training-job",
+        "inputDefinitions": {
+          "artifacts": {
+            "dataset": {
+              "artifactType": {
+                "schemaTitle": "google.VertexDataset",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "disable_early_stopping": {
+              "type": "STRING"
+            },
+            "display_name": {
+              "type": "STRING"
+            },
+            "export_evaluated_data_items": {
+              "type": "STRING"
+            },
+            "labels": {
+              "type": "STRING"
+            },
+            "location": {
+              "type": "STRING"
+            },
+            "optimization_prediction_type": {
+              "type": "STRING"
+            },
+            "project": {
+              "type": "STRING"
+            },
+            "target_column": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "model": {
+              "artifactType": {
+                "schemaTitle": "google.VertexModel",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-interpret-automl-regression-metrics": {
+        "executorLabel": "exec-interpret-automl-regression-metrics",
+        "inputDefinitions": {
+          "artifacts": {
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "project": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-tabular-dataset-create": {
+        "executorLabel": "exec-tabular-dataset-create",
+        "inputDefinitions": {
+          "parameters": {
+            "bq_source": {
+              "type": "STRING"
+            },
+            "display_name": {
+              "type": "STRING"
+            },
+            "labels": {
+              "type": "STRING"
+            },
+            "location": {
+              "type": "STRING"
+            },
+            "project": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "dataset": {
+              "artifactType": {
+                "schemaTitle": "google.VertexDataset",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-automl-tabular-training-job": {
+          "container": {
+            "args": [
+              "--init.project",
+              "{{$.inputs.parameters['project']}}",
+              "--init.location",
+              "{{$.inputs.parameters['location']}}",
+              "--init.display_name",
+              "{{$.inputs.parameters['display_name']}}",
+              "--init.optimization_prediction_type",
+              "{{$.inputs.parameters['optimization_prediction_type']}}",
+              "--method.dataset",
+              "{{$.inputs.artifacts['dataset'].metadata['resourceName']}}",
+              "--method.target_column",
+              "{{$.inputs.parameters['target_column']}}",
+              "--init.labels",
+              "{{$.inputs.parameters['labels']}}",
+              "--method.disable_early_stopping",
+              "{{$.inputs.parameters['disable_early_stopping']}}",
+              "--method.export_evaluated_data_items",
+              "{{$.inputs.parameters['export_evaluated_data_items']}}",
+              "--executor_input",
+              "{{$}}",
+              "--resource_name_output_artifact_uri",
+              "{{$.outputs.artifacts['model'].uri}}"
+            ],
+            "command": [
+              "python3",
+              "-m",
+              "google_cloud_pipeline_components.container.aiplatform.remote_runner",
+              "--cls_name",
+              "AutoMLTabularTrainingJob",
+              "--method_name",
+              "run"
+            ],
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
+          }
+        },
+        "exec-interpret-automl-regression-metrics": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "interpret_automl_regression_metrics"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'google-cloud-aiplatform' 'kfp==1.8.12' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef interpret_automl_regression_metrics(\n    project: str, region: str, model: Input[Artifact], metrics: Output[Metrics]\n):\n    import google.cloud.aiplatform as aip\n\n    model = aip.Model(model_name= model.metadata[\"resourceName\"], project=project, location=region)\n\n    model_evaluations = model.list_model_evaluations()\n    model_evaluation = list(model_evaluations)[0]\n\n    available_metrics = [\n        \"meanAbsoluteError\",\n        \"meanAbsolutePercentageError\",\n        \"rSquared\",\n        \"rootMeanSquaredError\",\n        \"rootMeanSquaredLogError\",\n    ]\n    output = dict()\n    for x in available_metrics:\n        val = model_evaluation.metrics.get(x)\n        output[x] = val\n        metrics.log_metric(str(x), float(val))\n    print(output)\n\n"
+            ],
+            "image": "python:3.9"
+          }
+        },
+        "exec-tabular-dataset-create": {
+          "container": {
+            "args": [
+              "--method.project",
+              "{{$.inputs.parameters['project']}}",
+              "--method.location",
+              "{{$.inputs.parameters['location']}}",
+              "--method.display_name",
+              "{{$.inputs.parameters['display_name']}}",
+              "--method.bq_source",
+              "{{$.inputs.parameters['bq_source']}}",
+              "--method.labels",
+              "{{$.inputs.parameters['labels']}}",
+              "--executor_input",
+              "{{$}}",
+              "--resource_name_output_artifact_uri",
+              "{{$.outputs.artifacts['dataset'].uri}}"
+            ],
+            "command": [
+              "python3",
+              "-m",
+              "google_cloud_pipeline_components.container.aiplatform.remote_runner",
+              "--cls_name",
+              "TabularDataset",
+              "--method_name",
+              "create"
+            ],
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.11"
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "tabular-classification-automl-pipeline"
+    },
+    "root": {
+      "dag": {
+        "outputs": {
+          "artifacts": {
+            "interpret-automl-regression-metrics-metrics": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metrics",
+                  "producerSubtask": "interpret-automl-regression-metrics"
+                }
+              ]
+            }
+          }
+        },
+        "tasks": {
+          "automl-tabular-training-job": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-automl-tabular-training-job"
+            },
+            "dependentTasks": [
+              "tabular-dataset-create"
+            ],
+            "inputs": {
+              "artifacts": {
+                "dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "dataset",
+                    "producerTask": "tabular-dataset-create"
+                  }
+                }
+              },
+              "parameters": {
+                "disable_early_stopping": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "0"
+                    }
+                  }
+                },
+                "display_name": {
+                  "componentInputParameter": "display_name"
+                },
+                "export_evaluated_data_items": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "0"
+                    }
+                  }
+                },
+                "labels": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "{}"
+                    }
+                  }
+                },
+                "location": {
+                  "componentInputParameter": "region"
+                },
+                "optimization_prediction_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "regression"
+                    }
+                  }
+                },
+                "project": {
+                  "componentInputParameter": "project"
+                },
+                "target_column": {
+                  "componentInputParameter": "label"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "automl-tabular-training-job"
+            }
+          },
+          "interpret-automl-regression-metrics": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-interpret-automl-regression-metrics"
+            },
+            "dependentTasks": [
+              "automl-tabular-training-job"
+            ],
+            "inputs": {
+              "artifacts": {
+                "model": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "model",
+                    "producerTask": "automl-tabular-training-job"
+                  }
+                }
+              },
+              "parameters": {
+                "project": {
+                  "componentInputParameter": "project"
+                },
+                "region": {
+                  "componentInputParameter": "region"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "interpret-automl-regression-metrics"
+            }
+          },
+          "tabular-dataset-create": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-tabular-dataset-create"
+            },
+            "inputs": {
+              "parameters": {
+                "bq_source": {
+                  "componentInputParameter": "bq_table"
+                },
+                "display_name": {
+                  "componentInputParameter": "display_name"
+                },
+                "labels": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "{}"
+                    }
+                  }
+                },
+                "location": {
+                  "componentInputParameter": "region"
+                },
+                "project": {
+                  "componentInputParameter": "project"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "tabular-dataset-create"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "bq_table": {
+            "type": "STRING"
+          },
+          "display_name": {
+            "type": "STRING"
+          },
+          "label": {
+            "type": "STRING"
+          },
+          "project": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "interpret-automl-regression-metrics-metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.12"
+  },
+  "runtimeConfig": {}
+}

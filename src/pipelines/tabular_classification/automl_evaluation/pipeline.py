@@ -17,54 +17,37 @@ import argparse
 import json
 from typing import Dict, Any
 from kfp.v2 import compiler, dsl
+from kfp.v2.dsl import Output, Artifact, component
+
 from google.cloud import aiplatform
-from google_cloud_pipeline_components import aiplatform as gcc_aip
-from google_cloud_pipeline_components.v1.endpoint import (EndpointCreateOp,
-                                                          ModelDeployOp)
 from src.components.metrics.automl import interpret_automl_classification_metrics
 
-@dsl.pipeline(name="tabular-classification-automl-pipeline")
+
+@component(
+    base_image="python:3.9",
+    packages_to_install=["google-cloud-aiplatform"],
+)
+def return_unmanaged_model(
+    artifact_uri: str, resource_name: str, model: Output[Artifact]
+):
+    model.metadata["resourceName"] = resource_name
+    model.uri = artifact_uri
+
+
+@dsl.pipeline(name="tabular-classification-automl--evaluation-pipeline")
 def pipeline(
     project: str,
     region: str,
-    bq_table: str,
-    label: str,
-    display_name: str,
 ):
-    dataset_create_op = gcc_aip.TabularDatasetCreateOp(
-        project=project, 
-        location=region, 
-        display_name=display_name, 
-        bq_source=bq_table
+    import_model_op = return_unmanaged_model(
+        artifact_uri="https://us-central1-aiplatform.googleapis.com/v1/projects/125188993477/locations/us-central1/models/2223665510153715712",
+        resource_name="projects/125188993477/locations/us-central1/models/2223665510153715712",
     )
     
-    training_op = gcc_aip.AutoMLTabularTrainingJobRunOp(
-        project=project,
-        location=region,
-        display_name=display_name,
-        optimization_prediction_type="classification",
-        dataset=dataset_create_op.outputs["dataset"],
-        target_column=label,
-    )
-    
-    model_eval_op = interpret_automl_classification_metrics(
+    model_eval_task = interpret_automl_classification_metrics(
         project,
         region,
-        training_op.outputs["model"],
-    )
-    
-    endpoint_op = EndpointCreateOp(
-        project=project,
-        location=region,
-        display_name=display_name,
-    )
-
-    ModelDeployOp(
-        model=training_op.outputs["model"],
-        endpoint=endpoint_op.outputs["endpoint"],
-        dedicated_resources_machine_type="n1-standard-2",
-        dedicated_resources_min_replica_count=1,
-        dedicated_resources_max_replica_count=1,
+        import_model_op.outputs["model"],
     )
 
 
@@ -84,7 +67,7 @@ def run_job(
 ):
     """ Run the pipeline """
     job = aiplatform.PipelineJob(
-        display_name="tabular_classification_automl_pipeline",
+        display_name="tabular_classification_automl_evaluation_pipeline",
         template_path=template_path,
         pipeline_root=pipeline_root,
         parameter_values=pipeline_params,
@@ -97,7 +80,7 @@ def run_job(
 
 def parse_args() -> argparse.Namespace:
     """ Parse arguments """
-    parser = argparse.ArgumentParser(description=f"tabular classification pipeline operations.")
+    parser = argparse.ArgumentParser(description=f"tabular classification evalauation pipeline operations.")
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)
 
