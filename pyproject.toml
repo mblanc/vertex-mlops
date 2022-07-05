@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "vertex-mlops"
+version = "0.1.0"
+description = ""
+license = "Apache License, Version 2.0"
+readme = "README.md"
+homepage = "https://github.com/mblanc/vertex-mlops"
+repository = "https://github.com/mblanc/vertex-mlops"
+authors = ["Matthieu Blanc <blanc.matthieu@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+kfp = "^1.8.12"
+google-cloud-bigquery = "<3.0.0dev"
+google-cloud-bigquery-storage = "^2.13.2"
+google-cloud-aiplatform = "^1.15.0"
+google-cloud-pipeline-components = "^1.0.13"
+cloudml-hypertune = "^0.1.0-alpha.6"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.2"
+pytest-mock = "^3.8.1"
+coverage = {extras = ["toml"], version = "^6.4.1"}
+pytest-cov = "^3.0.0"
+cowsay
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    'ignore:`dsl.ContainerOp.image` will be removed in future releases. Use `dsl.ContainerOp.container.image` instead.:PendingDeprecationWarning',
+    'ignore:APIs imported from the v1 namespace \(e\.g\. kfp\.dsl, kfp\.components, etc\) will not be supported by the v2 compiler since v2\.0\.0:FutureWarning',
+]
+
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+show_missing = true

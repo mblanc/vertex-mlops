@@ -12,6 +12,13 @@ This is an introduction
 
 ## Templates
 
+dev container
+install pyenv
+install poetry
+install zsh + oh my zsh
+
+
+
 | Template | Description |
 |----------|-------------|
 | Tabular Data | Classification |
@@ -30,3 +37,26 @@ This is an introduction
 | Text | Classification |
 | Text | Entity Extraction |
 | Text | Sentiment Analysis |
+
+training :
+
+data ingestion (create dataset) : 
+validate data : 
+data cleaning : 
+feature engineering : 
+split datasets : 
+trains models (hyperparameter tuning?) : 
+evaluate models (analysis and validation) :
+validate models :
+retrain best model (train+validation) ? :
+validate infra ? :
+push model
+
+deploy :
+
+
+
+bach predict :
+
+
+

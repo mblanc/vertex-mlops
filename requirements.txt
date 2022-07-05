@@ -1,5 +1,5 @@
 kfp
-google-cloud-bigquery
+google-cloud-bigquery<3.0.0dev
 google-cloud-bigquery-storage
 google-cloud-aiplatform
 google-cloud-pipeline-components
