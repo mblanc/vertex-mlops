@@ -30,6 +30,7 @@ flake8-bugbear = "^22.7.1"
 flake8-import-order = "^0.18.1"
 safety = "^2.0.0"
 mypy = "^0.961"
+pytype = {version = "^2022.6.30", python = "3.9"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
