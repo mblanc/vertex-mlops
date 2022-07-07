@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2.dsl import Artifact, Output, component
+from kfp.v2.dsl import Artifact, component, Output
 
 
 @component(base_image="python:3.9", packages_to_install=["google-cloud-bigquery"])
@@ -28,7 +28,6 @@ def import_csv_to_bigquery(
 
     # Construct a BigQuery client object.
     client = bigquery.Client(project=project, location=bq_location)
-    test = "test"
 
     def load_dataset(gcs_uri, table_id):
         job_config = bigquery.LoadJobConfig(

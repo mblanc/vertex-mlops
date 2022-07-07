@@ -15,7 +15,7 @@
 import argparse
 import json
 from os import path
-from typing import Dict, Any
+from typing import Any, Dict
 
 from google.cloud import aiplatform
 from google_cloud_pipeline_components.v1.bigquery import (
@@ -77,12 +77,15 @@ def compile(package_path: str):
     )
 
 
+_default_pipeline_params = {}
+
+
 def run_job(
     template_path: str,
     pipeline_root: str,
     project: str,
     region: str,
-    pipeline_params: Dict[str, Any] = {},
+    pipeline_params: Dict[str, Any] = _default_pipeline_params,
 ):
     """Run the pipeline"""
     job = aiplatform.PipelineJob(
@@ -100,7 +103,7 @@ def run_job(
 def parse_args() -> argparse.Namespace:
     """Parse arguments"""
     parser = argparse.ArgumentParser(
-        description=f"tabular regression bqml pipeline operations."
+        description="tabular regression bqml pipeline operations."
     )
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)

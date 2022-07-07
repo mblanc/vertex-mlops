@@ -15,11 +15,11 @@
 import argparse
 import json
 from os import path
-from typing import Dict, Any
+from typing import Any, Dict
 
 from google.cloud import aiplatform
 from kfp.v2 import compiler, dsl
-from kfp.v2.dsl import Output, Artifact, component
+from kfp.v2.dsl import Artifact, component, Output
 
 from src.components.metrics.automl import interpret_automl_classification_metrics
 
@@ -45,7 +45,7 @@ def pipeline(
         resource_name="projects/125188993477/locations/us-central1/models/2223665510153715712",
     )
 
-    model_eval_task = interpret_automl_classification_metrics(
+    _ = interpret_automl_classification_metrics(
         project,
         region,
         import_model_op.outputs["model"],
@@ -60,12 +60,15 @@ def compile(package_path: str):
     )
 
 
+_default_pipeline_params = {}
+
+
 def run_job(
     template_path: str,
     pipeline_root: str,
     project: str,
     region: str,
-    pipeline_params: Dict[str, Any] = {},
+    pipeline_params: Dict[str, Any] = _default_pipeline_params,
 ):
     """Run the pipeline"""
     job = aiplatform.PipelineJob(
@@ -83,7 +86,7 @@ def run_job(
 def parse_args() -> argparse.Namespace:
     """Parse arguments"""
     parser = argparse.ArgumentParser(
-        description=f"tabular classification evalauation pipeline operations."
+        description="tabular classification evalauation pipeline operations."
     )
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)

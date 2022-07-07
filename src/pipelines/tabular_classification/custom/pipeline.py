@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import argparse
-from typing import Dict, Any
+from typing import Any, Dict
 
 from google.cloud import aiplatform
 from kfp.v2 import compiler, dsl
@@ -30,9 +30,7 @@ def pipeline(
     bq_location: str,
 ):
     # Imports data to BigQuery using a custom component.
-    import_data_to_bigquery_op = import_csv_to_bigquery(
-        project, bq_location, bq_dataset, gcs_input_file_uri
-    )
+    _ = import_csv_to_bigquery(project, bq_location, bq_dataset, gcs_input_file_uri)
 
 
 def compile(package_path: str):
@@ -43,12 +41,15 @@ def compile(package_path: str):
     )
 
 
+_default_pipeline_params = {}
+
+
 def run_job(
     template_path: str,
     pipeline_root: str,
     project: str,
     region: str,
-    pipeline_params: Dict[str, Any] = {},
+    pipeline_params: Dict[str, Any] = _default_pipeline_params,
 ):
     """Run the pipeline"""
     job = aiplatform.PipelineJob(
@@ -66,7 +67,7 @@ def run_job(
 def parse_args() -> argparse.Namespace:
     """Parse arguments"""
     parser = argparse.ArgumentParser(
-        description=f"tabular classification pipeline operations."
+        description="tabular classification pipeline operations."
     )
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)

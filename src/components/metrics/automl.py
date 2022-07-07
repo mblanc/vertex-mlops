@@ -1,10 +1,10 @@
 from kfp.v2.dsl import (
     Artifact,
+    ClassificationMetrics,
+    component,
     Input,
     Metrics,
-    ClassificationMetrics,
     Output,
-    component,
 )
 
 
@@ -38,7 +38,6 @@ def interpret_automl_classification_metrics(
             metrics = MessageToDict(evaluation._pb.metrics)
             for metric in metrics.keys():
                 logging.info("metric: %s, value: %s", metric, metrics[metric])
-            metrics_str = json.dumps(metrics)
             metrics_list.append(metrics)
 
         return metrics_list

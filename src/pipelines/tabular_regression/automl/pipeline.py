@@ -15,7 +15,7 @@
 import argparse
 import json
 from os import path
-from typing import Dict, Any
+from typing import Any, Dict
 
 from google.cloud import aiplatform
 from google_cloud_pipeline_components import aiplatform as gcc_aip
@@ -45,7 +45,7 @@ def pipeline(
         target_column=label,
     )
 
-    model_eval_op = interpret_automl_regression_metrics(
+    _ = interpret_automl_regression_metrics(
         project,
         region,
         training_op.outputs["model"],
@@ -75,12 +75,15 @@ def compile(package_path: str):
     )
 
 
+_default_pipeline_params = {}
+
+
 def run_job(
     template_path: str,
     pipeline_root: str,
     project: str,
     region: str,
-    pipeline_params: Dict[str, Any] = {},
+    pipeline_params: Dict[str, Any] = _default_pipeline_params,
 ):
     """Run the pipeline"""
     job = aiplatform.PipelineJob(
@@ -98,7 +101,7 @@ def run_job(
 def parse_args() -> argparse.Namespace:
     """Parse arguments"""
     parser = argparse.ArgumentParser(
-        description=f"tabular regression automl pipeline operations."
+        description="tabular regression automl pipeline operations."
     )
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)

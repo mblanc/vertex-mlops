@@ -40,12 +40,12 @@ install zsh + oh my zsh
 
 training :
 
-data ingestion (create dataset) : 
-validate data : 
-data cleaning : 
-feature engineering : 
-split datasets : 
-trains models (hyperparameter tuning?) : 
+data ingestion (create dataset) :
+validate data :
+data cleaning :
+feature engineering :
+split datasets :
+trains models (hyperparameter tuning?) :
 evaluate models (analysis and validation) :
 validate models :
 retrain best model (train+validation) ? :
@@ -57,6 +57,3 @@ deploy :
 
 
 bach predict :
-
-
-

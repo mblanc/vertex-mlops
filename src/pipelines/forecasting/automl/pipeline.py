@@ -65,7 +65,7 @@ def pipeline(
         export_evaluated_data_items=True,
     )
 
-    batch_predict_op = gcc_aip.ModelBatchPredictOp(
+    _ = gcc_aip.ModelBatchPredictOp(
         project=project,
         location=region,
         job_display_name=display_name,
@@ -86,12 +86,15 @@ def compile(package_path: str):
     )
 
 
+_default_pipeline_params = {}
+
+
 def run_job(
     template_path: str,
     pipeline_root: str,
     project: str,
     region: str,
-    pipeline_params: Dict[str, Any] = {},
+    pipeline_params: Dict[str, Any] = _default_pipeline_params,
 ):
     """Run the pipeline"""
     job = aiplatform.PipelineJob(
@@ -109,7 +112,7 @@ def run_job(
 def parse_args() -> argparse.Namespace:
     """Parse arguments"""
     parser = argparse.ArgumentParser(
-        description=f"forecasting automl pipeline operations."
+        description="forecasting automl pipeline operations."
     )
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)

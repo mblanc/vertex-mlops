@@ -15,13 +15,13 @@
 import argparse
 import json
 from os import path
-from typing import Dict, Any
+from typing import Any, Dict
 
 from google.cloud import aiplatform
 from google_cloud_pipeline_components.experimental.bigquery import (
     BigqueryCreateModelJobOp,
-    BigqueryMLArimaEvaluateJobOp,
     BigqueryExplainForecastModelJobOp,
+    BigqueryMLArimaEvaluateJobOp,
 )
 from kfp.v2 import compiler, dsl
 
@@ -43,7 +43,7 @@ def pipeline(
         project=project,
         location=bq_location,
         query=f"""
-        CREATE OR REPLACE MODEL {model} 
+        CREATE OR REPLACE MODEL {model}
         OPTIONS(
           MODEL_TYPE='ARIMA_PLUS',
           TIME_SERIES_TIMESTAMP_COL='{time_column}',
@@ -94,12 +94,15 @@ def compile(package_path: str):
     )
 
 
+_default_pipeline_params = {}
+
+
 def run_job(
     template_path: str,
     pipeline_root: str,
     project: str,
     region: str,
-    pipeline_params: Dict[str, Any] = {},
+    pipeline_params: Dict[str, Any] = _default_pipeline_params,
 ):
     """Run the pipeline"""
     job = aiplatform.PipelineJob(
@@ -117,7 +120,7 @@ def run_job(
 def parse_args() -> argparse.Namespace:
     """Parse arguments"""
     parser = argparse.ArgumentParser(
-        description=f"forecasting bqml pipeline operations."
+        description="forecasting bqml pipeline operations."
     )
 
     commands = parser.add_subparsers(help="commands", dest="command", required=True)
