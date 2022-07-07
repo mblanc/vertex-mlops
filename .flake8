@@ -1,0 +1,14 @@
+[flake8]
+select = B,B9,BLK,C,E,F,I,S,W
+ignore = E203,W503,E501,S608
+max-complexity = 10
+max-line-length = 150
+application-import-names = src,tests
+import-order-style = google
+per-file-ignores = tests/*:S101
+exclude =
+    .git,
+    __pycache__,
+    .ipynb_checkpoints,
+    build,
+    dist
