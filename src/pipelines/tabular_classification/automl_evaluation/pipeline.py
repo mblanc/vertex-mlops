@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2 import compiler, dsl
+from kfp.v2 import dsl
 from kfp.v2.dsl import Artifact, component, Output
 
 from src.components.metrics.automl import interpret_automl_classification_metrics
+from src.pipelines.trigger.pipeline import VertexPipeline
 
 
 @component(
@@ -29,26 +30,28 @@ def return_unmanaged_model(
     model.uri = artifact_uri
 
 
-@dsl.pipeline(name="tabular-classification-automl--evaluation-pipeline")
-def pipeline(
-    project: str,
-    region: str,
-):
-    import_model_op = return_unmanaged_model(
-        artifact_uri="https://us-central1-aiplatform.googleapis.com/v1/projects/125188993477/locations/us-central1/models/2223665510153715712",
-        resource_name="projects/125188993477/locations/us-central1/models/2223665510153715712",
-    )
+class TabularClassificationAutoMLEvaluationPipeline(VertexPipeline):
 
-    _ = interpret_automl_classification_metrics(
-        project,
-        region,
-        import_model_op.outputs["model"],
-    )
+    display_name = "tabular_classification_automl_evaluation_pipeline"
+
+    @dsl.pipeline(name="tabular-classification-automl-evaluation-pipeline")
+    def pipeline(
+        self,
+        project: str,
+        region: str,
+    ):
+        import_model_op = return_unmanaged_model(
+            artifact_uri="https://us-central1-aiplatform.googleapis.com/v1/projects/125188993477/locations/us-central1/models/2223665510153715712",
+            resource_name="projects/125188993477/locations/us-central1/models/2223665510153715712",
+        )
+
+        _ = interpret_automl_classification_metrics(
+            project,
+            region,
+            import_model_op.outputs["model"],
+        )
 
 
-def compile(package_path: str):
-    """Compile the pipeline"""
-    compiler.Compiler().compile(
-        pipeline_func=pipeline,
-        package_path=package_path,
-    )
+if __name__ == "__main__":
+    pipeline = TabularClassificationAutoMLEvaluationPipeline()
+    pipeline.main(pipeline.parse_args())

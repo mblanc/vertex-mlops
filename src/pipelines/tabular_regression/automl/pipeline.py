@@ -13,57 +13,62 @@
 # limitations under the License.
 
 from google_cloud_pipeline_components import aiplatform as gcc_aip
-from kfp.v2 import compiler, dsl
+from kfp.v2 import dsl
 
 from src.components.metrics.automl import interpret_automl_regression_metrics
+from src.pipelines.trigger.pipeline import VertexPipeline
 
 
-@dsl.pipeline(name="tabular-classification-automl-pipeline")
-def pipeline(
-    project: str,
-    region: str,
-    bq_table: str,
-    label: str,
-    display_name: str,
-):
-    dataset_create_op = gcc_aip.TabularDatasetCreateOp(
-        project=project, location=region, display_name=display_name, bq_source=bq_table
-    )
+class TabularRegressionAutoMLPipeline(VertexPipeline):
 
-    training_op = gcc_aip.AutoMLTabularTrainingJobRunOp(
-        project=project,
-        location=region,
-        display_name=display_name,
-        optimization_prediction_type="regression",
-        dataset=dataset_create_op.outputs["dataset"],
-        target_column=label,
-    )
+    display_name = "tabular_regression_automl_pipeline"
 
-    _ = interpret_automl_regression_metrics(
-        project,
-        region,
-        training_op.outputs["model"],
-    )
+    @dsl.pipeline(name="tabular-regression-automl-pipeline")
+    def pipeline(
+        self,
+        project: str,
+        region: str,
+        bq_table: str,
+        label: str,
+        display_name: str,
+    ):
+        dataset_create_op = gcc_aip.TabularDatasetCreateOp(
+            project=project,
+            location=region,
+            display_name=display_name,
+            bq_source=bq_table,
+        )
+
+        training_op = gcc_aip.AutoMLTabularTrainingJobRunOp(
+            project=project,
+            location=region,
+            display_name=display_name,
+            optimization_prediction_type="regression",
+            dataset=dataset_create_op.outputs["dataset"],
+            target_column=label,
+        )
+
+        _ = interpret_automl_regression_metrics(
+            project,
+            region,
+            training_op.outputs["model"],
+        )
+
+    #     endpoint_op = EndpointCreateOp(
+    #         project=project,
+    #         location=region,
+    #         display_name=display_name + '_endpoint',
+    #     )
+
+    #     ModelDeployOp(
+    #         model=training_op.outputs["model"],
+    #         endpoint=endpoint_op.outputs["endpoint"],
+    #         dedicated_resources_machine_type="n1-standard-2",
+    #         dedicated_resources_min_replica_count=1,
+    #         dedicated_resources_max_replica_count=1,
+    #     )
 
 
-#     endpoint_op = EndpointCreateOp(
-#         project=project,
-#         location=region,
-#         display_name=display_name + '_endpoint',
-#     )
-
-#     ModelDeployOp(
-#         model=training_op.outputs["model"],
-#         endpoint=endpoint_op.outputs["endpoint"],
-#         dedicated_resources_machine_type="n1-standard-2",
-#         dedicated_resources_min_replica_count=1,
-#         dedicated_resources_max_replica_count=1,
-#     )
-
-
-def compile(package_path: str):
-    """Compile the pipeline"""
-    compiler.Compiler().compile(
-        pipeline_func=pipeline,
-        package_path=package_path,
-    )
+if __name__ == "__main__":
+    pipeline = TabularRegressionAutoMLPipeline()
+    pipeline.main(pipeline.parse_args())

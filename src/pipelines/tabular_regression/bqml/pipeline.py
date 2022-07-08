@@ -17,55 +17,58 @@ from google_cloud_pipeline_components.v1.bigquery import (
     BigqueryEvaluateModelJobOp,
     BigqueryPredictModelJobOp,
 )
-from kfp.v2 import compiler, dsl
+from kfp.v2 import dsl
 
 from src.components.metrics.bqml import interpret_bqml_evaluation_metrics
+from src.pipelines.trigger.pipeline import VertexPipeline
 
 
-@dsl.pipeline(name="tabular-classification-bqml-pipeline")
-def pipeline(
-    project: str,
-    bq_location: str,
-    region: str,
-    bq_table: str,
-    label: str,
-    model: str,
-):
-    bq_model = BigqueryCreateModelJobOp(
-        project=project,
-        location=bq_location,
-        query=f"CREATE OR REPLACE MODEL {model} OPTIONS (model_type='BOOSTED_TREE_REGRESSOR', labels=['{label}']) AS SELECT * FROM `{bq_table}`",
-    )
+class TabularRegressionBQMLPipeline(VertexPipeline):
 
-    bq_eval_model_op = BigqueryEvaluateModelJobOp(
-        project=project, location=bq_location, model=bq_model.outputs["model"]
-    ).after(bq_model)
+    display_name = "tabular_regression_bqml_pipeline"
 
-    _ = interpret_bqml_evaluation_metrics(
-        bq_eval_model_op.outputs["evaluation_metrics"]
-    )
+    @dsl.pipeline(name="tabular-regression-bqml-pipeline")
+    def pipeline(
+        self,
+        project: str,
+        bq_location: str,
+        region: str,
+        bq_table: str,
+        label: str,
+        model: str,
+    ):
+        bq_model = BigqueryCreateModelJobOp(
+            project=project,
+            location=bq_location,
+            query=f"CREATE OR REPLACE MODEL {model} OPTIONS (model_type='BOOSTED_TREE_REGRESSOR', labels=['{label}']) AS SELECT * FROM `{bq_table}`",
+        )
 
-    _ = BigqueryPredictModelJobOp(
-        project=project,
-        location=bq_location,
-        model=bq_model.outputs["model"],
-        table_name=f"`{bq_table}`",
-        # query_statement=f"SELECT * EXCEPT ({label}) FROM {bq_table} WHERE body_mass_g IS NOT NULL AND sex IS NOT NULL"
-        job_configuration_query={
-            "destinationTable": {
-                "projectId": "svc-demo-vertex",
-                "datasetId": "pipeline_us",
-                "tableId": "results_abalone",
+        bq_eval_model_op = BigqueryEvaluateModelJobOp(
+            project=project, location=bq_location, model=bq_model.outputs["model"]
+        ).after(bq_model)
+
+        _ = interpret_bqml_evaluation_metrics(
+            bq_eval_model_op.outputs["evaluation_metrics"]
+        )
+
+        _ = BigqueryPredictModelJobOp(
+            project=project,
+            location=bq_location,
+            model=bq_model.outputs["model"],
+            table_name=f"`{bq_table}`",
+            # query_statement=f"SELECT * EXCEPT ({label}) FROM {bq_table} WHERE body_mass_g IS NOT NULL AND sex IS NOT NULL"
+            job_configuration_query={
+                "destinationTable": {
+                    "projectId": "svc-demo-vertex",
+                    "datasetId": "pipeline_us",
+                    "tableId": "results_abalone",
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE",
             },
-            "createDisposition": "CREATE_IF_NEEDED",
-            "writeDisposition": "WRITE_TRUNCATE",
-        },
-    ).after(bq_model)
+        ).after(bq_model)
 
 
-def compile(package_path: str):
-    """Compile the pipeline"""
-    compiler.Compiler().compile(
-        pipeline_func=pipeline,
-        package_path=package_path,
-    )
+if __name__ == "__main__":
+    pipeline = TabularRegressionBQMLPipeline()
+    pipeline.main(pipeline.parse_args())

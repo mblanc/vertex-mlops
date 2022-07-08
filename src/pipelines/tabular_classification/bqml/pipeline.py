@@ -21,96 +21,99 @@ from google_cloud_pipeline_components.v1.bigquery import (
 )
 from google_cloud_pipeline_components.v1.endpoint import EndpointCreateOp, ModelDeployOp
 from google_cloud_pipeline_components.v1.model import ModelUploadOp
-from kfp.v2 import compiler, dsl
+from kfp.v2 import dsl
 from kfp.v2.components import importer_node
 
 from src.components.metrics.bqml import interpret_bqml_evaluation_metrics
+from src.pipelines.trigger.pipeline import VertexPipeline
 
 
-@dsl.pipeline(name="tabular-classification-bqml-pipeline")
-def pipeline(
-    project: str,
-    bq_location: str,
-    region: str,
-    bq_table: str,
-    label: str,
-    model: str,
-    artifact_uri: str,
-    display_name: str,
-):
-    bq_model = BigqueryCreateModelJobOp(
-        project=project,
-        location=bq_location,
-        query=f"CREATE OR REPLACE MODEL {model} OPTIONS (model_type='dnn_classifier', labels=['{label}']) AS SELECT * FROM `{bq_table}`",
-    )
+class TabularClassificationBQMLPipeline(VertexPipeline):
 
-    bq_eval_model_op = BigqueryEvaluateModelJobOp(
-        project=project, location=bq_location, model=bq_model.outputs["model"]
-    ).after(bq_model)
+    display_name = "tabular_classification_bqml_pipeline"
 
-    _ = interpret_bqml_evaluation_metrics(
-        bq_eval_model_op.outputs["evaluation_metrics"]
-    )
+    @dsl.pipeline(name="tabular-classification-bqml-pipeline")
+    def pipeline(
+        self,
+        project: str,
+        bq_location: str,
+        region: str,
+        bq_table: str,
+        label: str,
+        model: str,
+        artifact_uri: str,
+        display_name: str,
+    ):
+        bq_model = BigqueryCreateModelJobOp(
+            project=project,
+            location=bq_location,
+            query=f"CREATE OR REPLACE MODEL {model} OPTIONS (model_type='dnn_classifier', labels=['{label}']) AS SELECT * FROM `{bq_table}`",
+        )
 
-    _ = BigqueryPredictModelJobOp(
-        project=project,
-        location=bq_location,
-        model=bq_model.outputs["model"],
-        table_name=f"`{bq_table}`",
-        # query_statement=f"SELECT * EXCEPT ({label}) FROM {bq_table} WHERE body_mass_g IS NOT NULL AND sex IS NOT NULL"
-        job_configuration_query={
-            "destinationTable": {
-                "projectId": "svc-demo-vertex",
-                "datasetId": "pipeline_us",
-                "tableId": "results_1",
+        bq_eval_model_op = BigqueryEvaluateModelJobOp(
+            project=project, location=bq_location, model=bq_model.outputs["model"]
+        ).after(bq_model)
+
+        _ = interpret_bqml_evaluation_metrics(
+            bq_eval_model_op.outputs["evaluation_metrics"]
+        )
+
+        _ = BigqueryPredictModelJobOp(
+            project=project,
+            location=bq_location,
+            model=bq_model.outputs["model"],
+            table_name=f"`{bq_table}`",
+            # query_statement=f"SELECT * EXCEPT ({label}) FROM {bq_table} WHERE body_mass_g IS NOT NULL AND sex IS NOT NULL"
+            job_configuration_query={
+                "destinationTable": {
+                    "projectId": "svc-demo-vertex",
+                    "datasetId": "pipeline_us",
+                    "tableId": "results_1",
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE",
             },
-            "createDisposition": "CREATE_IF_NEEDED",
-            "writeDisposition": "WRITE_TRUNCATE",
-        },
-    ).after(bq_model)
+        ).after(bq_model)
 
-    bq_export = BigqueryExportModelJobOp(
-        project=project,
-        location=bq_location,
-        model=bq_model.outputs["model"],
-        model_destination_path=artifact_uri,
-    ).after(bq_model)
+        bq_export = BigqueryExportModelJobOp(
+            project=project,
+            location=bq_location,
+            model=bq_model.outputs["model"],
+            model_destination_path=artifact_uri,
+        ).after(bq_model)
 
-    import_unmanaged_model_task = importer_node.importer(
-        artifact_uri=artifact_uri,
-        artifact_class=artifact_types.UnmanagedContainerModel,
-        metadata={
-            "containerSpec": {
-                "imageUri": "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-6:latest",
+        import_unmanaged_model_task = importer_node.importer(
+            artifact_uri=artifact_uri,
+            artifact_class=artifact_types.UnmanagedContainerModel,
+            metadata={
+                "containerSpec": {
+                    "imageUri": "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-6:latest",
+                },
             },
-        },
-    ).after(bq_export)
+        ).after(bq_export)
 
-    model_upload = ModelUploadOp(
-        project=project,
-        display_name=display_name,
-        unmanaged_container_model=import_unmanaged_model_task.outputs["artifact"],
-    ).after(import_unmanaged_model_task)
+        model_upload = ModelUploadOp(
+            project=project,
+            display_name=display_name,
+            unmanaged_container_model=import_unmanaged_model_task.outputs["artifact"],
+        ).after(import_unmanaged_model_task)
 
-    endpoint = EndpointCreateOp(
-        project=project,
-        location=region,
-        display_name=display_name,
-    ).after(model_upload)
+        endpoint = EndpointCreateOp(
+            project=project,
+            location=region,
+            display_name=display_name,
+        ).after(model_upload)
 
-    _ = ModelDeployOp(
-        model=model_upload.outputs["model"],
-        endpoint=endpoint.outputs["endpoint"],
-        dedicated_resources_min_replica_count=1,
-        dedicated_resources_max_replica_count=1,
-        dedicated_resources_machine_type="n1-standard-2",
-        traffic_split={"0": 100},
-    )
+        _ = ModelDeployOp(
+            model=model_upload.outputs["model"],
+            endpoint=endpoint.outputs["endpoint"],
+            dedicated_resources_min_replica_count=1,
+            dedicated_resources_max_replica_count=1,
+            dedicated_resources_machine_type="n1-standard-2",
+            traffic_split={"0": 100},
+        )
 
 
-def compile(package_path: str):
-    """Compile the pipeline"""
-    compiler.Compiler().compile(
-        pipeline_func=pipeline,
-        package_path=package_path,
-    )
+if __name__ == "__main__":
+    pipeline = TabularClassificationBQMLPipeline()
+    pipeline.main(pipeline.parse_args())

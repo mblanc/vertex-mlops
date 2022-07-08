@@ -17,72 +17,76 @@ from google_cloud_pipeline_components.experimental.bigquery import (
     BigqueryExplainForecastModelJobOp,
     BigqueryMLArimaEvaluateJobOp,
 )
-from kfp.v2 import compiler, dsl
+from kfp.v2 import dsl
+
+from src.pipelines.trigger.pipeline import VertexPipeline
 
 
-@dsl.pipeline(name="forecasting-bqml-pipeline")
-def pipeline(
-    project: str,
-    region: str,
-    bq_location: str,
-    bq_table: str,
-    model: str,
-    label: str,
-    time_column: str,
-    id_column: str,
-    data_frequency: str,
-    forecast_horizon: int,
-):
-    bq_model = BigqueryCreateModelJobOp(
-        project=project,
-        location=bq_location,
-        query=f"""
-        CREATE OR REPLACE MODEL {model}
-        OPTIONS(
-          MODEL_TYPE='ARIMA_PLUS',
-          TIME_SERIES_TIMESTAMP_COL='{time_column}',
-          TIME_SERIES_DATA_COL='{label}',
-          TIME_SERIES_ID_COL='{id_column}',
-          DATA_FREQUENCY='{data_frequency}') AS
-        SELECT {id_column}, {label}, {time_column}  FROM `{bq_table}`
-        """,
-    )
+class TabularForecastingBQMLPipeline(VertexPipeline):
 
-    _ = BigqueryMLArimaEvaluateJobOp(
-        project=project,
-        location=bq_location,
-        model=bq_model.outputs["model"],
-        job_configuration_query={
-            "destinationTable": {
-                "projectId": "svc-demo-vertex",
-                "datasetId": "pipeline_us",
-                "tableId": "forecast_eval",
+    display_name = "forecasting_bqml_pipeline"
+
+    @dsl.pipeline(name="forecasting-bqml-pipeline")
+    def pipeline(
+        self,
+        project: str,
+        region: str,
+        bq_location: str,
+        bq_table: str,
+        model: str,
+        label: str,
+        time_column: str,
+        id_column: str,
+        data_frequency: str,
+        forecast_horizon: int,
+    ):
+        bq_model = BigqueryCreateModelJobOp(
+            project=project,
+            location=bq_location,
+            query=f"""
+            CREATE OR REPLACE MODEL {model}
+            OPTIONS(
+              MODEL_TYPE='ARIMA_PLUS',
+              TIME_SERIES_TIMESTAMP_COL='{time_column}',
+              TIME_SERIES_DATA_COL='{label}',
+              TIME_SERIES_ID_COL='{id_column}',
+              DATA_FREQUENCY='{data_frequency}') AS
+            SELECT {id_column}, {label}, {time_column}  FROM `{bq_table}`
+            """,
+        )
+
+        _ = BigqueryMLArimaEvaluateJobOp(
+            project=project,
+            location=bq_location,
+            model=bq_model.outputs["model"],
+            job_configuration_query={
+                "destinationTable": {
+                    "projectId": "svc-demo-vertex",
+                    "datasetId": "pipeline_us",
+                    "tableId": "forecast_eval",
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE",
             },
-            "createDisposition": "CREATE_IF_NEEDED",
-            "writeDisposition": "WRITE_TRUNCATE",
-        },
-    ).after(bq_model)
+        ).after(bq_model)
 
-    _ = BigqueryExplainForecastModelJobOp(
-        project=project,
-        location=bq_location,
-        model=bq_model.outputs["model"],
-        horizon=forecast_horizon,
-        job_configuration_query={
-            "destinationTable": {
-                "projectId": "svc-demo-vertex",
-                "datasetId": "pipeline_us",
-                "tableId": "forecast_results",
+        _ = BigqueryExplainForecastModelJobOp(
+            project=project,
+            location=bq_location,
+            model=bq_model.outputs["model"],
+            horizon=forecast_horizon,
+            job_configuration_query={
+                "destinationTable": {
+                    "projectId": "svc-demo-vertex",
+                    "datasetId": "pipeline_us",
+                    "tableId": "forecast_results",
+                },
+                "createDisposition": "CREATE_IF_NEEDED",
+                "writeDisposition": "WRITE_TRUNCATE",
             },
-            "createDisposition": "CREATE_IF_NEEDED",
-            "writeDisposition": "WRITE_TRUNCATE",
-        },
-    ).after(bq_model)
+        ).after(bq_model)
 
 
-def compile(package_path: str):
-    """Compile the pipeline"""
-    compiler.Compiler().compile(
-        pipeline_func=pipeline,
-        package_path=package_path,
-    )
+if __name__ == "__main__":
+    pipeline = TabularForecastingBQMLPipeline()
+    pipeline.main(pipeline.parse_args())

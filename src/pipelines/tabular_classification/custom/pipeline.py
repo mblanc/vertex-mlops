@@ -12,26 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2 import compiler, dsl
+from kfp.v2 import dsl
 
 from src.components.bigquery.bq_import import import_csv_to_bigquery
+from src.pipelines.trigger.pipeline import VertexPipeline
 
 
-@dsl.pipeline(name="tabular-classification-pipeline")
-def pipeline(
-    project: str,
-    gcs_input_file_uri: str,
-    region: str,
-    bq_dataset: str,
-    bq_location: str,
-):
-    # Imports data to BigQuery using a custom component.
-    _ = import_csv_to_bigquery(project, bq_location, bq_dataset, gcs_input_file_uri)
+class TabularClassificationCustomPipeline(VertexPipeline):
+
+    display_name = "tabular_classification_custom_pipeline"
+
+    @dsl.pipeline(name="tabular-classification-custom-pipeline")
+    def pipeline(
+        self,
+        project: str,
+        gcs_input_file_uri: str,
+        region: str,
+        bq_dataset: str,
+        bq_location: str,
+    ):
+        # Imports data to BigQuery using a custom component.
+        _ = import_csv_to_bigquery(project, bq_location, bq_dataset, gcs_input_file_uri)
 
 
-def compile(package_path: str):
-    """Compile the pipeline"""
-    compiler.Compiler().compile(
-        pipeline_func=pipeline,
-        package_path=package_path,
-    )
+if __name__ == "__main__":
+    pipeline = TabularClassificationCustomPipeline()
+    pipeline.main(pipeline.parse_args())

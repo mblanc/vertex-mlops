@@ -13,68 +13,75 @@
 # limitations under the License.
 
 from google_cloud_pipeline_components import aiplatform as gcc_aip
-from kfp.v2 import compiler, dsl
+from kfp.v2 import dsl
+
+from src.pipelines.trigger.pipeline import VertexPipeline
 
 
-@dsl.pipeline(name="forecasting-automl-pipeline")
-def pipeline(
-    project: str,
-    region: str,
-    display_name: str,
-    bq_table: str,
-    label: str,
-    time_column: str,
-    id_column: str,
-    available_at_forecast_columns: list,
-    unavailable_at_forecast_columns: list,
-    time_series_attribute_columns: list,
-    forecast_horizon: int,
-    context_window: int,
-    data_granularity_unit: str,
-    data_granularity_count: int,
-    column_specs: dict,
-    bigquery_source_input_uri: str,
-    bigquery_destination_output_uri: str,
-):
-    dataset_create_op = gcc_aip.TimeSeriesDatasetCreateOp(
-        project=project, location=region, display_name=display_name, bq_source=bq_table
-    )
+class TabularForecastingAutoMLPipeline(VertexPipeline):
 
-    training_op = gcc_aip.AutoMLForecastingTrainingJobRunOp(
-        project=project,
-        location=region,
-        display_name=display_name,
-        dataset=dataset_create_op.outputs["dataset"],
-        target_column=label,
-        time_column=time_column,
-        time_series_identifier_column=id_column,
-        available_at_forecast_columns=available_at_forecast_columns,
-        unavailable_at_forecast_columns=unavailable_at_forecast_columns,
-        time_series_attribute_columns=time_series_attribute_columns,
-        forecast_horizon=forecast_horizon,
-        context_window=context_window,
-        data_granularity_unit=data_granularity_unit,
-        data_granularity_count=data_granularity_count,
-        column_specs=column_specs,
-        export_evaluated_data_items=True,
-    )
+    display_name = "forecasting_automl_pipeline"
 
-    _ = gcc_aip.ModelBatchPredictOp(
-        project=project,
-        location=region,
-        job_display_name=display_name,
-        model=training_op.outputs["model"],
-        instances_format="bigquery",
-        bigquery_source_input_uri=bigquery_source_input_uri,
-        predictions_format="bigquery",
-        bigquery_destination_output_uri=bigquery_destination_output_uri,
-        generate_explanation=True,
-    )
+    @dsl.pipeline(name="forecasting-automl-pipeline")
+    def pipeline(
+        self,
+        project: str,
+        region: str,
+        display_name: str,
+        bq_table: str,
+        label: str,
+        time_column: str,
+        id_column: str,
+        available_at_forecast_columns: list,
+        unavailable_at_forecast_columns: list,
+        time_series_attribute_columns: list,
+        forecast_horizon: int,
+        context_window: int,
+        data_granularity_unit: str,
+        data_granularity_count: int,
+        column_specs: dict,
+        bigquery_source_input_uri: str,
+        bigquery_destination_output_uri: str,
+    ):
+        dataset_create_op = gcc_aip.TimeSeriesDatasetCreateOp(
+            project=project,
+            location=region,
+            display_name=display_name,
+            bq_source=bq_table,
+        )
+
+        training_op = gcc_aip.AutoMLForecastingTrainingJobRunOp(
+            project=project,
+            location=region,
+            display_name=display_name,
+            dataset=dataset_create_op.outputs["dataset"],
+            target_column=label,
+            time_column=time_column,
+            time_series_identifier_column=id_column,
+            available_at_forecast_columns=available_at_forecast_columns,
+            unavailable_at_forecast_columns=unavailable_at_forecast_columns,
+            time_series_attribute_columns=time_series_attribute_columns,
+            forecast_horizon=forecast_horizon,
+            context_window=context_window,
+            data_granularity_unit=data_granularity_unit,
+            data_granularity_count=data_granularity_count,
+            column_specs=column_specs,
+            export_evaluated_data_items=True,
+        )
+
+        _ = gcc_aip.ModelBatchPredictOp(
+            project=project,
+            location=region,
+            job_display_name=display_name,
+            model=training_op.outputs["model"],
+            instances_format="bigquery",
+            bigquery_source_input_uri=bigquery_source_input_uri,
+            predictions_format="bigquery",
+            bigquery_destination_output_uri=bigquery_destination_output_uri,
+            generate_explanation=True,
+        )
 
 
-def compile(package_path: str):
-    """Compile the pipeline"""
-    compiler.Compiler().compile(
-        pipeline_func=pipeline,
-        package_path=package_path,
-    )
+if __name__ == "__main__":
+    pipeline = TabularForecastingAutoMLPipeline()
+    pipeline.main(pipeline.parse_args())

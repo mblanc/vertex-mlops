@@ -1308,8 +1308,8 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 
 [metadata]
 lock-version = "1.1"
-python-versions = "^3.9"
-content-hash = "f4030ce34deae4194c29ab839ebb84857643122a4fff19a3c3f0781e8511917d"
+python-versions = "^3.9,<3.11"
+content-hash = "594399e2a1283b9126006260e68046e4730bdbca1a24ee48ecf4118287190711"
 
 [metadata.files]
 absl-py = [
