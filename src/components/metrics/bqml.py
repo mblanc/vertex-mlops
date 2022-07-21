@@ -4,7 +4,7 @@ from kfp.v2.dsl import Artifact, component, Input, Metrics, Output
 @component(base_image="python:3.9")
 def interpret_bqml_evaluation_metrics(
     bqml_evaluation_metrics: Input[Artifact], metrics: Output[Metrics]
-):
+) -> None:
     import math
 
     metadata = bqml_evaluation_metrics.metadata

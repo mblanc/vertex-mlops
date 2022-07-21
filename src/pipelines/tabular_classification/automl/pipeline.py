@@ -32,7 +32,7 @@ class TabularClassificationAutoMLPipeline(VertexPipeline):
         bq_table: str,
         label: str,
         display_name: str,
-    ):
+    ) -> None:
         dataset_create_op = gcc_aip.TabularDatasetCreateOp(
             project=project,
             location=region,

@@ -23,13 +23,13 @@ def import_csv_to_bigquery(
     gcs_csv_uri: str,
     raw_dataset: Output[Artifact],
     table_name_prefix: str = "abalone",
-):
+) -> None:
     from google.cloud import bigquery
 
     # Construct a BigQuery client object.
     client = bigquery.Client(project=project, location=bq_location)
 
-    def load_dataset(gcs_uri, table_id):
+    def load_dataset(gcs_uri: str, table_id: str) -> None:
         job_config = bigquery.LoadJobConfig(
             autodetect=True,
             # schema=[
@@ -56,7 +56,7 @@ def import_csv_to_bigquery(
         destination_table = client.get_table(table_id)  # Make an API request.
         print("Loaded {} rows.".format(destination_table.num_rows))
 
-    def create_dataset_if_not_exist(bq_dataset_id, bq_location):
+    def create_dataset_if_not_exist(bq_dataset_id: str, bq_location: str) -> None:
         print(
             "Checking for existence of bq dataset. If it does not exist, it creates one"
         )

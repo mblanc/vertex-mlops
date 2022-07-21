@@ -25,7 +25,7 @@ from src.pipelines.trigger.pipeline import VertexPipeline
 )
 def return_unmanaged_model(
     artifact_uri: str, resource_name: str, model: Output[Artifact]
-):
+) -> None:
     model.metadata["resourceName"] = resource_name
     model.uri = artifact_uri
 
@@ -39,7 +39,7 @@ class TabularClassificationAutoMLEvaluationPipeline(VertexPipeline):
         self,
         project: str,
         region: str,
-    ):
+    ) -> None:
         import_model_op = return_unmanaged_model(
             artifact_uri="https://us-central1-aiplatform.googleapis.com/v1/projects/125188993477/locations/us-central1/models/2223665510153715712",
             resource_name="projects/125188993477/locations/us-central1/models/2223665510153715712",

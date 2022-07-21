@@ -20,13 +20,15 @@ def interpret_automl_classification_metrics(
     model: Input[Artifact],
     metrics: Output[Metrics],
     classificationMetrics: Output[ClassificationMetrics],
-):
+) -> None:
     import json
     import logging
 
     from google.cloud import aiplatform as aip
 
-    def get_eval_info(client, model_name):
+    def get_eval_info(
+        client: aip.gapic.ModelServiceClient, model_name: str
+    ) -> list[dict]:
         from google.protobuf.json_format import MessageToDict
 
         response = client.list_model_evaluations(parent=model_name)
@@ -42,7 +44,9 @@ def interpret_automl_classification_metrics(
 
         return metrics_list
 
-    def log_metrics(metrics_list, classificationMetrics):
+    def log_metrics(
+        metrics_list: list[dict], classificationMetrics: Output[ClassificationMetrics]
+    ) -> None:
         test_confusion_matrix = metrics_list[0]["confusionMatrix"]
         logging.info("rows: %s", test_confusion_matrix["rows"])
 
@@ -97,7 +101,7 @@ def interpret_automl_classification_metrics(
 )
 def interpret_automl_regression_metrics(
     project: str, region: str, model: Input[Artifact], metrics: Output[Metrics]
-):
+) -> None:
     import google.cloud.aiplatform as aip
 
     model = aip.Model(

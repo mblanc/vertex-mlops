@@ -43,7 +43,7 @@ class TabularClassificationBQMLPipeline(VertexPipeline):
         model: str,
         artifact_uri: str,
         display_name: str,
-    ):
+    ) -> None:
         bq_model = BigqueryCreateModelJobOp(
             project=project,
             location=bq_location,

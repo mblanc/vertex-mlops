@@ -36,7 +36,7 @@ class TabularRegressionBQMLPipeline(VertexPipeline):
         bq_table: str,
         label: str,
         model: str,
-    ):
+    ) -> None:
         bq_model = BigqueryCreateModelJobOp(
             project=project,
             location=bq_location,

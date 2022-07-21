@@ -12,10 +12,10 @@ class VertexPipeline:
 
     display_name = "default"
 
-    def pipeline(self, *args, **kwargs):
+    def pipeline(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def compile_pipeline(self, package_path: str):
+    def compile_pipeline(self, package_path: str) -> None:
         """Compile the pipeline"""
         compiler.Compiler().compile(
             pipeline_func=self.pipeline,
@@ -29,7 +29,7 @@ class VertexPipeline:
         project: str,
         region: str,
         pipeline_params: Dict[str, Any] = _default_pipeline_params,
-    ):
+    ) -> None:
         """Run the pipeline"""
         job = aiplatform.PipelineJob(
             display_name=self.display_name,
@@ -82,7 +82,7 @@ class VertexPipeline:
 
         return parser.parse_args()
 
-    def main(self, args):
+    def main(self, args: argparse.Namespace) -> None:
         if args.command == "compile":
             self.compile_pipeline(args.template_path)
         elif args.command == "run":

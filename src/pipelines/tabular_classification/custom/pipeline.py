@@ -30,7 +30,7 @@ class TabularClassificationCustomPipeline(VertexPipeline):
         region: str,
         bq_dataset: str,
         bq_location: str,
-    ):
+    ) -> None:
         # Imports data to BigQuery using a custom component.
         _ = import_csv_to_bigquery(project, bq_location, bq_dataset, gcs_input_file_uri)
 

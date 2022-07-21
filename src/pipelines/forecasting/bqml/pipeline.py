@@ -39,7 +39,7 @@ class TabularForecastingBQMLPipeline(VertexPipeline):
         id_column: str,
         data_frequency: str,
         forecast_horizon: int,
-    ):
+    ) -> None:
         bq_model = BigqueryCreateModelJobOp(
             project=project,
             location=bq_location,

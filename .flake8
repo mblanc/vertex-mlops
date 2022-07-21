@@ -1,6 +1,6 @@
 [flake8]
-select = B,B9,BLK,C,E,F,I,S,W
-ignore = E203,W503,E501,S608
+select = ANN,B,B9,BLK,C,E,F,I,S,W
+ignore = E203,W503,E501,S608,ANN101,ANN401
 max-complexity = 10
 max-line-length = 150
 application-import-names = src,tests

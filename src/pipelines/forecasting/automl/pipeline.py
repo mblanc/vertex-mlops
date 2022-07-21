@@ -42,7 +42,7 @@ class TabularForecastingAutoMLPipeline(VertexPipeline):
         column_specs: dict,
         bigquery_source_input_uri: str,
         bigquery_destination_output_uri: str,
-    ):
+    ) -> None:
         dataset_create_op = gcc_aip.TimeSeriesDatasetCreateOp(
             project=project,
             location=region,
