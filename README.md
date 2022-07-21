@@ -1,4 +1,4 @@
-[![Tests](https://github.com/<your-username>/hypermodern-python/workflows/Tests/badge.svg)](https://github.com/<your-username>/hypermodern-python/actions?workflow=Tests)
+[![Tests](https://github.com/mblanc/vertex-mlops/workflows/Tests/badge.svg)](https://github.com/mblanc/vertex-mlops/actions?workflow=Tests)
 
 # vertex-mlops
 Vertex AI - MLOps templates
